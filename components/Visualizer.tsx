@@ -429,9 +429,35 @@ const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="absolute bottom-4 left-4 text-[10px] text-[#475569] font-mono">
+      {/* Stats - Desktop */}
+      <div className="absolute bottom-4 left-4 text-[10px] text-[#475569] font-mono hidden sm:block">
         {data.nodes.length} nodes · {data.links.length} edges · {Math.round(transform.k * 100)}%
+      </div>
+
+      {/* Mobile Legend - Compact horizontal bar */}
+      <div className="absolute bottom-20 left-2 right-2 sm:hidden">
+        <div className="flex items-center justify-center gap-3 bg-[#0d1424]/90 border border-[#1e3a5f] rounded-full px-3 py-1.5">
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#00d4ff]" />
+            <span className="text-[8px] text-[#64748b]">Root</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />
+            <span className="text-[8px] text-[#64748b]">Folder</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#0ea5e9]" />
+            <span className="text-[8px] text-[#64748b]">TS</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+            <span className="text-[8px] text-[#64748b]">JS</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#475569]" />
+            <span className="text-[8px] text-[#64748b]">Other</span>
+          </div>
+        </div>
       </div>
     </div>
   );
