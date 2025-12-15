@@ -65,26 +65,32 @@ const App: React.FC = () => {
         return;
       }
 
-      try {
-        const watchResult = await watchRepo(owner, repo, token);
-        setWatchId(watchResult.watchId);
-        setIsWatching(true);
+      // Real-time watching only works in local development
+      // In production, it requires GitHub webhooks to be configured
+      const isProduction = import.meta.env.PROD;
+      
+      if (!isProduction) {
+        try {
+          const watchResult = await watchRepo(owner, repo, token);
+          setWatchId(watchResult.watchId);
+          setIsWatching(true);
 
-        const unsubscribe = subscribeToRepoUpdates(
-          watchResult.watchId,
-          (update) => {
-            setUpdates(prev => [update, ...prev].slice(0, 8));
-            if (update.type === 'commit') {
-              fetchRepoTree(owner, repo, 'main', token)
-                .then(newData => setData(newData))
-                .catch(console.error);
-            }
-          },
-          () => setIsWatching(false)
-        );
-        unsubscribeRef.current = unsubscribe;
-      } catch (watchError) {
-        console.warn('Could not start watching:', watchError);
+          const unsubscribe = subscribeToRepoUpdates(
+            watchResult.watchId,
+            (update) => {
+              setUpdates(prev => [update, ...prev].slice(0, 8));
+              if (update.type === 'commit') {
+                fetchRepoTree(owner, repo, 'main', token)
+                  .then(newData => setData(newData))
+                  .catch(console.error);
+              }
+            },
+            () => setIsWatching(false)
+          );
+          unsubscribeRef.current = unsubscribe;
+        } catch (watchError) {
+          console.warn('Could not start watching:', watchError);
+        }
       }
 
     } catch (err: any) {

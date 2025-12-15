@@ -24,7 +24,24 @@ export const fetchRepoDetails = async (
     throw new Error(error.error || 'Failed to fetch repository details')
   }
 
-  return response.json()
+  const data = await response.json()
+  
+  // Handle both raw GitHub API format and our transformed format
+  // This ensures compatibility if Motia Cloud has an older deployment
+  return {
+    name: data.name,
+    fullName: data.fullName || data.full_name || `${owner}/${repo}`,
+    description: data.description || '',
+    stars: data.stars ?? data.stargazers_count ?? 0,
+    forks: data.forks ?? data.forks_count ?? 0,
+    language: data.language || '',
+    defaultBranch: data.defaultBranch || data.default_branch || 'main',
+    url: data.url || data.html_url || `https://github.com/${owner}/${repo}`,
+    owner: {
+      login: data.owner?.login || owner,
+      avatar: data.owner?.avatar || data.owner?.avatar_url || '',
+    },
+  }
 }
 
 export const fetchRepoTree = async (
