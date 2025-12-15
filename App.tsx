@@ -9,6 +9,9 @@ import StarAnimation from './components/StarAnimation';
 import StarHistoryPage from './components/StarHistoryPage';
 import { GitCommit, RefreshCw, Radio, Menu, X } from 'lucide-react';
 
+const STORAGE_KEY = 'gitgalaxy_repo';
+const TOKEN_KEY = 'gitgalaxy_token';
+
 const App: React.FC = () => {
   const [data, setData] = useState<RepoData>({ nodes: [], links: [] });
   const [repoInfo, setRepoInfo] = useState<RepoInfo | null>(null);
@@ -25,13 +28,31 @@ const App: React.FC = () => {
   const [currentToken, setCurrentToken] = useState<string>('');
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const hasAutoLoaded = useRef(false);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
       }
     };
+  }, []);
+
+  // Auto-load last viewed repo on mount
+  useEffect(() => {
+    if (hasAutoLoaded.current) return;
+    hasAutoLoaded.current = true;
+    
+    const savedRepo = localStorage.getItem(STORAGE_KEY);
+    const savedToken = localStorage.getItem(TOKEN_KEY) || '';
+    
+    if (savedRepo && savedRepo.includes('/')) {
+      const [owner, repo] = savedRepo.split('/');
+      if (owner && repo) {
+        handleVisualize(owner, repo, savedToken);
+      }
+    }
   }, []);
 
   const handleVisualize = async (owner: string, repo: string, token: string) => {
@@ -185,8 +206,8 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Visualization */}
-        <div className="flex-1 w-full h-full">
+        {/* Visualization - add bottom padding on mobile for nav bar */}
+        <div className="flex-1 w-full h-full pb-16 sm:pb-0">
            {data.nodes.length > 0 ? (
                <Visualizer 
                  data={data} 
@@ -249,32 +270,6 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Mobile Menu Button - Removed in favor of bottom bar */}
-      {/* Sidebar - Desktop */}
-      {repoInfo && !showStarHistoryPage && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1424] border-t border-[#1e3a5f] p-3 flex items-center justify-around sm:hidden">
-          <button 
-            onClick={() => setShowMobileSidebar(true)}
-            className="flex flex-col items-center gap-1 text-[#64748b] hover:text-white"
-          >
-            <Menu size={20} />
-            <span className="text-[10px]">Details</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowStarHistoryPage(true)}
-            className="flex flex-col items-center gap-1 text-[#fbbf24] hover:text-[#fbbf24]/80"
-          >
-            <span className="bg-[#fbbf24]/10 p-1 rounded-full">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            </span>
-            <span className="text-[10px]">History</span>
-          </button>
-               </div>
-           )}
-           
       {/* Sidebar - Desktop */}
       {(repoInfo || loading) && (
         <div className="z-30 h-full hidden sm:block">
@@ -283,7 +278,30 @@ const App: React.FC = () => {
             selectedNode={selectedNode} 
             onOpenStarHistory={() => setShowStarHistoryPage(true)}
             token={currentToken}
-           />
+          />
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation Bar */}
+      {repoInfo && !showStarHistoryPage && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1424]/95 backdrop-blur border-t border-[#1e3a5f] p-2 flex items-center justify-around sm:hidden safe-area-pb">
+          <button 
+            onClick={() => setShowMobileSidebar(true)}
+            className="flex flex-col items-center gap-0.5 text-[#64748b] hover:text-white px-4 py-1"
+          >
+            <Menu size={18} />
+            <span className="text-[9px]">Details</span>
+          </button>
+          
+          <button 
+            onClick={() => setShowStarHistoryPage(true)}
+            className="flex flex-col items-center gap-0.5 text-[#fbbf24] hover:text-[#fbbf24]/80 px-4 py-1"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            <span className="text-[9px]">Stars</span>
+          </button>
         </div>
       )}
 
@@ -291,10 +309,16 @@ const App: React.FC = () => {
       {showMobileSidebar && (repoInfo || loading) && (
         <div className="fixed inset-0 z-50 sm:hidden">
           <div 
-            className="absolute inset-0 bg-black/50" 
+            className="absolute inset-0 bg-black/60" 
             onClick={() => setShowMobileSidebar(false)}
           />
-          <div className="absolute right-0 top-0 h-full w-72 max-w-[85vw]">
+          <div className="absolute right-0 top-0 h-full w-72 max-w-[80vw] shadow-2xl">
+            <button 
+              onClick={() => setShowMobileSidebar(false)}
+              className="absolute top-3 right-3 z-10 p-1.5 bg-[#1e3a5f] rounded-full text-[#64748b] hover:text-white"
+            >
+              <X size={16} />
+            </button>
             <Sidebar 
               repoInfo={repoInfo} 
               selectedNode={selectedNode} 
@@ -304,9 +328,9 @@ const App: React.FC = () => {
               }}
               token={currentToken}
             />
-      </div>
-            </div>
-        )}
+          </div>
+        </div>
+      )}
 
       {/* Star History Full Page */}
       {showStarHistoryPage && repoInfo && (

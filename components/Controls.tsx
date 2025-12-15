@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Loader2, Key, ChevronDown } from 'lucide-react';
 
 interface ControlsProps {
@@ -6,10 +6,34 @@ interface ControlsProps {
   onVisualize: (owner: string, repo: string, token: string) => void;
 }
 
+const STORAGE_KEY = 'gitgalaxy_repo';
+const TOKEN_KEY = 'gitgalaxy_token';
+
 const Controls: React.FC<ControlsProps> = ({ isLoading, onVisualize }) => {
-  const [inputValue, setInputValue] = useState('motiadev/motia');
-  const [token, setToken] = useState('');
+  const [inputValue, setInputValue] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(STORAGE_KEY) || 'motiadev/motia';
+    }
+    return 'motiadev/motia';
+  });
+  const [token, setToken] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(TOKEN_KEY) || '';
+    }
+    return '';
+  });
   const [showToken, setShowToken] = useState(false);
+
+  // Save to localStorage when values change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, inputValue);
+  }, [inputValue]);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+  }, [token]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
