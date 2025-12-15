@@ -1,7 +1,10 @@
 import { RepoInfo, RepoData } from '../types'
 
-// Motia backend base URL (use environment variable or default to localhost)
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001'
+// Motia backend base URL
+// In production (Vercel), use relative URLs so it goes through the proxy
+// In development, use localhost
+const isProduction = import.meta.env.PROD
+const API_BASE = isProduction ? '' : 'http://localhost:3001'
 
 export const fetchRepoDetails = async (
   owner: string,
@@ -67,8 +70,14 @@ export const watchRepo = async (
 }
 
 // WebSocket URL for streams
+// Note: WebSocket streaming is only available in local development
+// In production, Vercel serverless doesn't support persistent WebSocket connections
 export const getStreamUrl = (watchId: string) => {
-  // Convert http:// to ws:// and https:// to wss://
+  if (isProduction) {
+    // Return null to indicate streaming is not available
+    return null
+  }
+  // Convert http:// to ws:// 
   const wsBase = API_BASE.replace(/^http/, 'ws')
   return `${wsBase}/__streams/repoUpdates?groupId=${encodeURIComponent(watchId)}`
 }
@@ -92,6 +101,13 @@ export const subscribeToRepoUpdates = (
   onError?: (error: Event) => void
 ): (() => void) => {
   const wsUrl = getStreamUrl(watchId)
+  
+  // In production, WebSocket streaming is not available
+  if (!wsUrl) {
+    console.log('WebSocket streaming not available in production')
+    return () => {} // Return no-op cleanup function
+  }
+  
   const ws = new WebSocket(wsUrl)
 
   ws.onmessage = (event) => {
