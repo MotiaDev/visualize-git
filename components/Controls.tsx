@@ -66,7 +66,12 @@ const Controls: React.FC<ControlsProps> = ({ isLoading, onVisualize }) => {
             className="w-full px-3 py-1.5 bg-[#0d1424] border border-[#1e3a5f] rounded text-xs text-[#e2e8f0] placeholder-[#475569] focus:outline-none focus:border-[#00d4ff] transition-colors font-mono"
           />
           <p className="text-[9px] text-[#475569]">
-            Optional: Increases rate limit
+            Increases rate limit · <a 
+              href="https://github.com/settings/tokens/new?scopes=public_repo&description=GitGalaxy" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-[#00d4ff] hover:underline"
+            >Get token →</a>
           </p>
         </div>
       )}

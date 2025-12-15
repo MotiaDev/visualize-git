@@ -34,20 +34,31 @@ vercel --prod
 3. Import your GitHub repository
 4. Vercel auto-detects Vite ✅
 
-## Step 2: Set Environment Variables in Vercel
+## Step 2: Set Environment Variables
+    
+    ### In Vercel (Frontend & Proxy)
+    Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+    
+    | Variable | Value | Purpose |
+    |----------|-------|---------|
+    | `VITE_API_BASE` | `https://your-project.vercel.app` | Frontend knows where to call APIs |
+    | `MOTIA_BACKEND_URL` | `https://your-backend.hub.motia.cloud` | Proxy knows where real backend is (PRIVATE) |
 
-Go to Vercel Dashboard → Your Project → Settings → Environment Variables
-
-Add these variables:
-
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| `VITE_API_BASE` | `https://your-project.vercel.app` | Frontend knows where to call APIs |
-| `MOTIA_BACKEND_URL` | `https://your-backend.hub.motia.cloud` | Proxy knows where real backend is (PRIVATE) |
-
-**Important:** 
-- `VITE_API_BASE` should be your Vercel URL
-- `MOTIA_BACKEND_URL` is kept private, only used by the serverless proxy
+    ### In Motia Cloud (Backend)
+    Use the CLI to set your GitHub token. This prevents rate limiting for all users.
+    
+    ```bash
+    # Set GitHub Token to prevent rate limits (use your own personal access token)
+    motia env set GITHUB_TOKEN=ghp_your_token_here
+    
+    # Redeploy for changes to take effect
+    motia cloud deploy
+    ```
+    
+    **Important:** 
+    - `VITE_API_BASE` should be your Vercel URL
+    - `MOTIA_BACKEND_URL` is kept private, only used by the serverless proxy
+    - `GITHUB_TOKEN` on Motia Cloud ensures the backend doesn't hit rate limits
 
 ## Step 3: Update Chrome Extension
 

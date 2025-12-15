@@ -95,7 +95,14 @@ const App: React.FC = () => {
       }
 
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      let errorMessage = err.message || "An unexpected error occurred.";
+      
+      // Check for rate limit error
+      if (errorMessage.includes("rate limit") || errorMessage.includes("403")) {
+        errorMessage = "GitHub API rate limit exceeded. Please add a GitHub Token in the controls above to continue.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -146,17 +153,17 @@ const App: React.FC = () => {
               </svg>
               <h1 className="text-lg font-semibold tracking-tight text-white">
                 git<span className="text-[#00d4ff]">galaxy</span>
-              </h1>
+                </h1>
               {isWatching && (
                 <span className="flex items-center gap-1 text-[10px] text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full border border-[#22c55e]/20">
                   <Radio size={8} className="animate-pulse" />
                   live
                 </span>
               )}
-            </div>
+             </div>
             
             {/* Controls */}
-            <Controls isLoading={loading} onVisualize={handleVisualize} />
+             <Controls isLoading={loading} onVisualize={handleVisualize} />
             
             {/* Search Bar - only show when we have data */}
             {data.nodes.length > 0 && (
@@ -170,24 +177,24 @@ const App: React.FC = () => {
             )}
             
             {/* Error */}
-            {error && (
+             {error && (
               <div className="mt-3 bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] px-3 py-2 rounded text-xs">
-                {error}
+                    {error}
               </div>
-            )}
+             )}
           </div>
         </div>
 
         {/* Visualization */}
         <div className="flex-1 w-full h-full">
-          {data.nodes.length > 0 ? (
-            <Visualizer 
-              data={data} 
-              onNodeSelect={setSelectedNode}
+           {data.nodes.length > 0 ? (
+               <Visualizer 
+                 data={data} 
+                 onNodeSelect={setSelectedNode} 
               highlightedNodes={highlightedNodes}
               focusNode={focusNode}
-            />
-          ) : (
+               />
+           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center">
               <svg width="120" height="120" viewBox="0 0 24 24" fill="none" className="text-[#1e3a5f] opacity-30">
                 <circle cx="12" cy="12" r="3" fill="currentColor"/>
@@ -242,16 +249,32 @@ const App: React.FC = () => {
         )}
       </div>
 
-      {/* Mobile Menu Button */}
-      {(repoInfo || loading) && (
-        <button
-          onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-          className="fixed top-4 right-4 z-40 p-2 bg-[#0d1424] border border-[#1e3a5f] rounded-lg text-[#64748b] hover:text-white sm:hidden"
-        >
-          {showMobileSidebar ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      )}
-
+      {/* Mobile Menu Button - Removed in favor of bottom bar */}
+      {/* Sidebar - Desktop */}
+      {repoInfo && !showStarHistoryPage && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0d1424] border-t border-[#1e3a5f] p-3 flex items-center justify-around sm:hidden">
+          <button 
+            onClick={() => setShowMobileSidebar(true)}
+            className="flex flex-col items-center gap-1 text-[#64748b] hover:text-white"
+          >
+            <Menu size={20} />
+            <span className="text-[10px]">Details</span>
+          </button>
+          
+          <button 
+            onClick={() => setShowStarHistoryPage(true)}
+            className="flex flex-col items-center gap-1 text-[#fbbf24] hover:text-[#fbbf24]/80"
+          >
+            <span className="bg-[#fbbf24]/10 p-1 rounded-full">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </span>
+            <span className="text-[10px]">History</span>
+          </button>
+               </div>
+           )}
+           
       {/* Sidebar - Desktop */}
       {(repoInfo || loading) && (
         <div className="z-30 h-full hidden sm:block">
@@ -260,7 +283,7 @@ const App: React.FC = () => {
             selectedNode={selectedNode} 
             onOpenStarHistory={() => setShowStarHistoryPage(true)}
             token={currentToken}
-          />
+           />
         </div>
       )}
 
@@ -281,9 +304,9 @@ const App: React.FC = () => {
               }}
               token={currentToken}
             />
-          </div>
-        </div>
-      )}
+      </div>
+            </div>
+        )}
 
       {/* Star History Full Page */}
       {showStarHistoryPage && repoInfo && (

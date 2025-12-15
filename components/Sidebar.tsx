@@ -20,8 +20,9 @@ const getGitHubUrl = (repoInfo: RepoInfo | null, node: RepoNode): string | null 
 
 const Sidebar: React.FC<SidebarProps> = ({ repoInfo, selectedNode, onOpenStarHistory, token }) => {
   return (
-    <div className="w-72 h-full bg-[#0d1424] border-l border-[#1e3a5f] overflow-y-auto">
-      {/* Repo Info */}
+    <div className="w-72 h-full bg-[#0d1424] border-l border-[#1e3a5f] flex flex-col">
+      <div className="flex-1 overflow-y-auto">
+        {/* Repo Info */}
       {repoInfo && (
         <div className="p-4 border-b border-[#1e3a5f]">
           <div className="flex items-center gap-3 mb-3">
@@ -134,9 +135,10 @@ const Sidebar: React.FC<SidebarProps> = ({ repoInfo, selectedNode, onOpenStarHis
           </p>
         </div>
       )}
+      </div>
 
       {/* Keyboard shortcuts hint */}
-      <div className="p-4 border-t border-[#1e3a5f] mt-auto">
+      <div className="p-4 border-t border-[#1e3a5f] mt-auto hidden sm:block">
         <h3 className="text-[10px] uppercase tracking-wider text-[#475569] mb-2">Tips</h3>
         <div className="text-[9px] text-[#475569] space-y-1">
           <p>• Scroll to zoom in/out</p>
