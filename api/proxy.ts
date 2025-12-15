@@ -43,26 +43,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined,
     })
     
-    // Check content type to handle SVG images properly
-    const contentType = response.headers.get('content-type') || 'application/json'
+    // Get response as text first to inspect it
+    const responseText = await response.text()
+    const contentType = response.headers.get('content-type') || ''
     
-    if (contentType.includes('image/svg+xml') || contentType.includes('svg')) {
-      // For SVG responses, return as text
-      const svgData = await response.text()
+    // Check if it's SVG (by content-type OR by content starting with <svg)
+    const isSvg = contentType.includes('svg') || responseText.trim().startsWith('<svg')
+    
+    if (isSvg) {
       res.setHeader('Content-Type', 'image/svg+xml')
-      return res.status(response.status).send(svgData)
+      res.setHeader('Cache-Control', 'public, max-age=3600') // Cache for 1 hour
+      return res.status(response.status).send(responseText)
     }
     
-    // For JSON responses
-    const data = await response.json()
-    return res.status(response.status).json(data)
+    // For JSON responses, parse the text
+    try {
+      const data = JSON.parse(responseText)
+      return res.status(response.status).json(data)
+    } catch {
+      // If it's not valid JSON, return as text
+      return res.status(response.status).send(responseText)
+    }
     
   } catch (error) {
     console.error('Proxy error:', error)
     return res.status(500).json({ 
       error: 'Failed to proxy request to backend',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      backendUrl: MOTIA_BACKEND  // For debugging
+      message: error instanceof Error ? error.message : 'Unknown error'
     })
   }
 }
