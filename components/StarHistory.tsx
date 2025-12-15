@@ -22,6 +22,12 @@ const StarHistory: React.FC<StarHistoryProps> = ({ repoInfo, onOpenFullPage, tok
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Guard: Skip if repoInfo doesn't have required properties
+    if (!repoInfo?.owner?.login || !repoInfo?.name) {
+      setLoading(false);
+      return;
+    }
+    
     const loadHistory = async () => {
       setLoading(true);
       setError(null);
@@ -38,16 +44,16 @@ const StarHistory: React.FC<StarHistoryProps> = ({ repoInfo, onOpenFullPage, tok
             setHistory(data.history);
           } else {
             // Create simulated growth curve if no history
-            setHistory(generateSimulatedHistory(repoInfo.stars));
+            setHistory(generateSimulatedHistory(repoInfo.stars ?? 0));
           }
         } else {
           // API failed, create simulated history
-          setHistory(generateSimulatedHistory(repoInfo.stars));
+          setHistory(generateSimulatedHistory(repoInfo.stars ?? 0));
         }
       } catch (err: any) {
         setError(err.message);
         // Create simulated history on error
-        setHistory(generateSimulatedHistory(repoInfo.stars));
+        setHistory(generateSimulatedHistory(repoInfo.stars ?? 0));
       } finally {
         setLoading(false);
       }
@@ -252,7 +258,7 @@ const StarHistory: React.FC<StarHistoryProps> = ({ repoInfo, onOpenFullPage, tok
               <div className="flex items-center gap-1.5 text-[#fbbf24]">
                 <Star size={12} className="fill-current" />
                 <span className="text-sm font-bold tabular-nums">
-                  {repoInfo.stars.toLocaleString()}
+                  {(repoInfo.stars ?? 0).toLocaleString()}
                 </span>
               </div>
               <span className="text-[8px] text-[#22c55e] flex items-center gap-0.5">
@@ -267,7 +273,7 @@ const StarHistory: React.FC<StarHistoryProps> = ({ repoInfo, onOpenFullPage, tok
             <div className="flex items-center gap-2 text-[#fbbf24]">
               <Star size={20} className="fill-current" />
               <span className="text-xl font-bold tabular-nums">
-                {repoInfo.stars.toLocaleString()}
+                {(repoInfo.stars ?? 0).toLocaleString()}
               </span>
             </div>
           </div>
