@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1424"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="url(#bg)"/>
+  <!-- Stars -->
+  <circle cx="5" cy="7" r="0.8" fill="#fff" opacity="0.4"/>
+  <circle cx="27" cy="5" r="0.6" fill="#fff" opacity="0.3"/>
+  <circle cx="8" cy="25" r="0.5" fill="#fff" opacity="0.5"/>
+  <circle cx="25" cy="22" r="0.7" fill="#fff" opacity="0.3"/>
+  <circle cx="3" cy="18" r="0.4" fill="#fff" opacity="0.4"/>
+  <circle cx="29" cy="14" r="0.5" fill="#fff" opacity="0.3"/>
+  <!-- Central node (root) -->
+  <circle cx="16" cy="16" r="5" fill="url(#glow)" opacity="0.2"/>
+  <circle cx="16" cy="16" r="3.5" fill="url(#glow)"/>
+  <!-- Orbiting nodes -->
+  <circle cx="8" cy="12" r="2" fill="#3b82f6"/>
+  <circle cx="24" cy="12" r="1.5" fill="#22c55e"/>
+  <circle cx="10" cy="22" r="1.8" fill="#0ea5e9"/>
+  <circle cx="22" cy="20" r="1.3" fill="#f59e0b"/>
+  <!-- Connection lines -->
+  <line x1="16" y1="16" x2="8" y2="12" stroke="#1e3a5f" stroke-width="0.8" opacity="0.6"/>
+  <line x1="16" y1="16" x2="24" y2="12" stroke="#1e3a5f" stroke-width="0.8" opacity="0.6"/>
+  <line x1="16" y1="16" x2="10" y2="22" stroke="#1e3a5f" stroke-width="0.8" opacity="0.6"/>
+  <line x1="16" y1="16" x2="22" y2="20" stroke="#1e3a5f" stroke-width="0.8" opacity="0.6"/>
+</svg>
+

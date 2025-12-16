@@ -155,7 +155,7 @@ Once deployed, you can embed star history charts and badges anywhere! These are 
 After deploying to Vercel (see [Deploy Frontend to Vercel](#deploy-frontend-to-vercel)), use this format:
 
 ```markdown
-[![Star History Chart](https://your-project.vercel.app/api/embed/stars?repos=owner/repo)](https://github.com/owner/repo)
+[![Star History Chart](https://git-history.com/api/embed/stars?repos=owner/repo)](https://github.com/owner/repo)
 ```
 
 **API Endpoint:** `GET /api/embed/stars`
@@ -172,19 +172,19 @@ After deploying to Vercel (see [Deploy Frontend to Vercel](#deploy-frontend-to-v
 **Examples:**
 ```markdown
 <!-- Single repo (dark theme) -->
-[![Star History](https://your-project.vercel.app/api/embed/stars?repos=motiadev/motia)](https://github.com/motiadev/motia)
+[![Star History](https://git-history.com/api/embed/stars?repos=motiadev/motia)](https://github.com/motiadev/motia)
 
 <!-- Multi-repo comparison -->
-[![Star History](https://your-project.vercel.app/api/embed/stars?repos=facebook/react,vercel/next.js&theme=dark)](https://github.com)
+[![Star History](https://git-history.com/api/embed/stars?repos=facebook/react,vercel/next.js&theme=dark)](https://github.com)
 
 <!-- Light mode for light backgrounds -->
-[![Star History](https://your-project.vercel.app/api/embed/stars?repos=motiadev/motia&theme=light)](https://github.com/motiadev/motia)
+[![Star History](https://git-history.com/api/embed/stars?repos=motiadev/motia&theme=light)](https://github.com/motiadev/motia)
 ```
 
 ### Star Badge
 
 ```markdown
-![Stars](https://your-project.vercel.app/api/embed/badge/owner/repo)
+![Stars](https://git-history.com/api/embed/badge/owner/repo)
 ```
 
 **API Endpoint:** `GET /api/embed/badge/:owner/:repo`
@@ -201,16 +201,16 @@ After deploying to Vercel (see [Deploy Frontend to Vercel](#deploy-frontend-to-v
 **Examples:**
 ```markdown
 <!-- Simple badge -->
-![Stars](https://your-project.vercel.app/api/embed/badge/facebook/react)
+![Stars](https://git-history.com/api/embed/badge/facebook/react)
 
 <!-- With custom label -->
-![Stars](https://your-project.vercel.app/api/embed/badge/facebook/react?label=⭐%20React)
+![Stars](https://git-history.com/api/embed/badge/facebook/react?label=⭐%20React)
 
 <!-- Light theme -->
-![Stars](https://your-project.vercel.app/api/embed/badge/facebook/react?theme=light)
+![Stars](https://git-history.com/api/embed/badge/facebook/react?theme=light)
 ```
 
-> **Note:** Replace `your-project.vercel.app` with your actual Vercel deployment URL.
+> **Note:** Replace `git-history.com` with your actual Vercel deployment URL.
 
 ## Deploy Backend to Motia Cloud
 
@@ -389,7 +389,7 @@ git push origin main
 
 **Step 3:** Your site is live! 🚀
 
-Visit: `https://your-project.vercel.app`
+Visit: `https://git-history.com`
 
 ### Connecting Frontend to Backend
 
@@ -409,7 +409,7 @@ VITE_API_BASE=http://localhost:3001
 **For production (Vercel):**
 ```bash
 # Set in Vercel Dashboard → Settings → Environment Variables
-VITE_API_BASE=https://your-project.vercel.app  # Your Vercel URL, NOT the Motia backend
+VITE_API_BASE=https://git-history.com  # Your Vercel URL, NOT the Motia backend
 MOTIA_BACKEND_URL=https://your-backend.hub.motia.cloud  # Motia backend (private, used by proxy)
 ```
 
@@ -443,7 +443,7 @@ The included `vercel.json` handles SPA routing:
 
 | Variable | Where to Set | Value | Purpose |
 |----------|--------------|-------|---------|
-| `VITE_API_BASE` | Vercel Dashboard | `https://your-project.vercel.app` | Frontend calls go to Vercel (public) |
+| `VITE_API_BASE` | Vercel Dashboard | `https://git-history.com` | Frontend calls go to Vercel (public) |
 | `MOTIA_BACKEND_URL` | Vercel Dashboard | `https://xxx.hub.motia.cloud` | Vercel proxy → Motia backend (private) |
 | `GITHUB_TOKEN` | Motia Cloud Dashboard | `ghp_xxx...` | Backend → GitHub API auth |
 
@@ -451,13 +451,13 @@ The included `vercel.json` handles SPA routing:
 
 ```bash
 # Test frontend (should open Vercel site)
-open https://your-project.vercel.app
+open https://git-history.com
 
 # Test API connection through Vercel proxy
-curl "https://your-project.vercel.app/api/github/repo/facebook/react"
+curl "https://git-history.com/api/github/repo/facebook/react"
 
 # Test embed chart (proxied through Vercel)
-open "https://your-project.vercel.app/api/embed/stars?repos=facebook/react"
+open "https://git-history.com/api/embed/stars?repos=facebook/react"
 
 # The Motia backend URL should NEVER be exposed publicly
 ```
@@ -466,7 +466,7 @@ open "https://your-project.vercel.app/api/embed/stars?repos=facebook/react"
 
 Vercel automatically deploys on every push to your repository:
 
-- **Production**: Deploys from `main` branch → `your-project.vercel.app`
+- **Production**: Deploys from `main` branch → `git-history.com`
 - **Preview**: Deploys from PRs/branches → `your-project-git-branch.vercel.app`
 
 ### Custom Domain
@@ -494,7 +494,7 @@ Add your own domain in Vercel Dashboard:
 
 **Can't connect to backend**
 - Verify both Vercel and Motia backend are deployed
-- Test Vercel proxy: `curl https://your-project.vercel.app/api/github/repo/facebook/react`
+- Test Vercel proxy: `curl https://git-history.com/api/github/repo/facebook/react`
 - Check `MOTIA_BACKEND_URL` is set correctly in Vercel environment variables
 - Check browser console for exact error
 

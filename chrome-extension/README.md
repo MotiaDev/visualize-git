@@ -41,13 +41,13 @@ For production, deploy to Motia Cloud:
 npx motia deploy
 ```
 
-Then update `API_BASE` in `config.js`:
+The extension is pre-configured to use `https://git-history.com`.
+
+For self-hosted deployments, update `API_BASE` in `config.js`:
 
 ```javascript
-const API_BASE = 'https://your-project.vercel.app';
+const API_BASE = 'https://your-domain.com';
 ```
-
-**Important:** Use your Vercel URL, not the Motia backend URL. Vercel proxies requests securely.
 
 ### 2. GitHub Token (Optional)
 
