@@ -17,6 +17,7 @@
     "@motiadev/plugin-logs": "^0.17.4-beta.185",
     "@motiadev/plugin-observability": "^0.17.4-beta.185",
     "@motiadev/plugin-states": "^0.17.4-beta.185",
+    "@vercel/analytics": "^1.6.1",
     "d3": "^7.9.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.561.0",

@@ -8,6 +8,7 @@ import SearchBar from './components/SearchBar';
 import StarAnimation from './components/StarAnimation';
 import StarHistoryPage from './components/StarHistoryPage';
 import { GitCommit, RefreshCw, Radio, Menu, X } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 const STORAGE_KEY = 'gitgalaxy_repo';
 const TOKEN_KEY = 'gitgalaxy_token';
@@ -155,6 +156,9 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-[#050810] text-[#e2e8f0] overflow-hidden font-mono">
+      
+      {/* Vercel Web Analytics */}
+      <Analytics />
       
       {/* Star Animation Overlay */}
       <StarAnimation starCount={repoInfo?.stars || 0} isActive={showStarAnimation} />
