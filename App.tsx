@@ -7,7 +7,7 @@ import Sidebar from './components/Sidebar';
 import SearchBar from './components/SearchBar';
 import StarAnimation from './components/StarAnimation';
 import StarHistoryPage from './components/StarHistoryPage';
-import { GitCommit, RefreshCw, Radio, Menu, X } from 'lucide-react';
+import { GitCommit, RefreshCw, Radio, Menu, X, Github } from 'lucide-react';
 
 // Lazy load Analytics to avoid import errors in development
 const Analytics = lazy(() => 
@@ -195,7 +195,7 @@ const App: React.FC = () => {
         {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-20 p-3 sm:p-4">
           <div className="max-w-lg mx-auto pr-10 sm:pr-0">
-            {/* Logo */}
+            {/* Logo + GitHub Link */}
             <div className="flex items-center justify-center gap-2 mb-3">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#00d4ff]">
                 <circle cx="12" cy="12" r="3" fill="currentColor"/>
@@ -204,14 +204,24 @@ const App: React.FC = () => {
               </svg>
               <h1 className="text-lg font-semibold tracking-tight text-white">
                 git<span className="text-[#00d4ff]">-history</span>
-                </h1>
+              </h1>
               {isWatching && (
                 <span className="flex items-center gap-1 text-[10px] text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full border border-[#22c55e]/20">
                   <Radio size={8} className="animate-pulse" />
                   live
                 </span>
               )}
-             </div>
+              <a
+                href="https://github.com/MotiaDev/visualize-git"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-[#94a3b8] hover:text-white bg-[#1e3a5f]/50 hover:bg-[#1e3a5f] border border-[#1e3a5f] rounded-full transition-colors ml-1"
+                title="View source on GitHub - Open Source!"
+              >
+                <Github size={12} />
+                <span className="hidden sm:inline">Open Source</span>
+              </a>
+            </div>
             
             {/* Controls */}
              <Controls isLoading={loading} onVisualize={handleVisualize} />
