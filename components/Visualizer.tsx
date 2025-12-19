@@ -1345,7 +1345,7 @@ const Visualizer: React.FC<VisualizerProps> = ({
                   : `${hoveredNode.size} B`}
               </span>
             )}
-          </div>
+                     </div>
           {hoveredNode.path && (
             <div className="text-xs text-[#64748b] mt-1 font-mono truncate max-w-[300px]">
               {hoveredNode.path}
@@ -1583,7 +1583,7 @@ const Visualizer: React.FC<VisualizerProps> = ({
 
       {/* Tip for large repos - hidden on mobile to avoid overlap */}
       {isLargeGraph && !collapsibleMode && layoutMode === 'force' && (
-        <div className="absolute top-16 left-4 z-40 max-w-xs hidden sm:block">
+        <div className="absolute top-52 left-4 z-30 max-w-xs hidden sm:block">
           <div className="bg-[#0d1424]/95 border border-[#f59e0b]/50 rounded-lg px-3 py-2 text-[11px]">
             <span className="text-[#f59e0b] font-medium">💡 Large repo ({nodeCount} files)</span>
             <span className="text-[#94a3b8]"> — Try </span>
