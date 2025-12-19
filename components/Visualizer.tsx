@@ -197,6 +197,7 @@ const Visualizer: React.FC<VisualizerProps> = ({
   // Keyboard navigation state
   const [focusedNodeIndex, setFocusedNodeIndex] = useState<number>(-1);
   const [showHelp, setShowHelp] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   // Toggle node expansion
   const toggleNodeExpansion = useCallback((nodeId: string) => {
@@ -280,6 +281,73 @@ const Visualizer: React.FC<VisualizerProps> = ({
   const focusedNode = focusedNodeIndex >= 0 && focusedNodeIndex < filteredData.nodes.length 
     ? filteredData.nodes[focusedNodeIndex] 
     : null;
+
+  // Dashboard stats computation
+  const dashboardStats = useMemo(() => {
+    const allNodes = data.nodes;
+    const files = allNodes.filter(n => n.type === 'blob');
+    const folders = allNodes.filter(n => n.type === 'tree');
+    
+    // Language breakdown
+    const langCounts: Record<string, number> = {};
+    files.forEach(f => {
+      const ext = f.extension || 'other';
+      langCounts[ext] = (langCounts[ext] || 0) + 1;
+    });
+    
+    // Sort by count descending
+    const topLanguages = Object.entries(langCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+    
+    // Top folders by children count
+    const folderChildCounts: Record<string, number> = {};
+    allNodes.forEach(n => {
+      if (n.parentId) {
+        folderChildCounts[n.parentId] = (folderChildCounts[n.parentId] || 0) + 1;
+      }
+    });
+    
+    const topFolders = folders
+      .map(f => ({ ...f, childCount: folderChildCounts[f.id] || 0 }))
+      .sort((a, b) => b.childCount - a.childCount)
+      .slice(0, 6);
+    
+    // Total size
+    const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
+    
+    // Depth analysis
+    const depths = allNodes.map(n => n.path.split('/').length);
+    const maxDepth = Math.max(...depths, 0);
+    const avgDepth = depths.length > 0 ? (depths.reduce((a, b) => a + b, 0) / depths.length).toFixed(1) : '0';
+    
+    // Contributor stats from commits
+    const contributorCounts: Record<string, { count: number; avatar: string; name: string }> = {};
+    if (commits) {
+      commits.forEach(c => {
+        const key = c.author.email;
+        if (!contributorCounts[key]) {
+          contributorCounts[key] = { count: 0, avatar: c.author.avatar, name: c.author.name };
+        }
+        contributorCounts[key].count++;
+      });
+    }
+    const topContributors = Object.values(contributorCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    
+    return {
+      totalFiles: files.length,
+      totalFolders: folders.length,
+      topLanguages,
+      topFolders,
+      totalSize,
+      maxDepth,
+      avgDepth,
+      topContributors,
+      totalCommits: commits?.length || 0,
+    };
+  }, [data.nodes, commits]);
 
   // Generate random stars for background
   const stars = useMemo(() => {
@@ -1062,7 +1130,9 @@ const Visualizer: React.FC<VisualizerProps> = ({
 
         case 'Escape':
           e.preventDefault();
-          if (showHelp) {
+          if (showDashboard) {
+            setShowDashboard(false);
+          } else if (showHelp) {
             setShowHelp(false);
           } else if (selectedNode) {
             setSelectedNode(null);
@@ -1102,12 +1172,18 @@ const Visualizer: React.FC<VisualizerProps> = ({
           e.preventDefault();
           setShowLayoutToggle(prev => !prev);
           break;
+
+        case 'd':
+          // Toggle dashboard
+          e.preventDefault();
+          setShowDashboard(prev => !prev);
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [filteredData.nodes.length, focusedNode, selectedNode, showHelp, useCollapsibleMode, layoutMode, collapsibleMode, onNodeSelect, getChildrenCount, toggleNodeExpansion]);
+  }, [filteredData.nodes.length, focusedNode, selectedNode, showHelp, showDashboard, useCollapsibleMode, layoutMode, collapsibleMode, onNodeSelect, getChildrenCount, toggleNodeExpansion]);
 
   // Highlight focused node visually
   useEffect(() => {
@@ -1644,6 +1720,12 @@ const Visualizer: React.FC<VisualizerProps> = ({
           {/* Quick mode toggles */}
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setShowDashboard(true)}
+              className="px-2 py-1 rounded text-[10px] font-medium bg-[#1e3a5f] text-[#94a3b8]"
+            >
+              📊
+            </button>
+            <button
               onClick={() => {
                 if (collapsibleMode) {
                   setCollapsibleMode(false);
@@ -1809,6 +1891,10 @@ const Visualizer: React.FC<VisualizerProps> = ({
                     <kbd className="px-2 py-0.5 bg-[#1e3a5f] rounded text-[#f59e0b] font-mono text-xs">g</kbd>
                   </div>
                   <div className="flex justify-between items-center text-sm">
+                    <span className="text-[#94a3b8]">Open dashboard</span>
+                    <kbd className="px-2 py-0.5 bg-[#1e3a5f] rounded text-[#00d4ff] font-mono text-xs">d</kbd>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
                     <span className="text-[#94a3b8]">Show this help</span>
                     <kbd className="px-2 py-0.5 bg-[#1e3a5f] rounded text-white font-mono text-xs">?</kbd>
                   </div>
@@ -1835,10 +1921,157 @@ const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       )}
 
+      {/* Dashboard Modal */}
+      {showDashboard && (
+        <div 
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm"
+          onClick={() => setShowDashboard(false)}
+        >
+          <div 
+            className="bg-[#0a0f1a] border border-[#1e3a5f] rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white">📊 Repository Dashboard</h2>
+              <button 
+                onClick={() => setShowDashboard(false)}
+                className="p-1 text-[#64748b] hover:text-white hover:bg-[#1e3a5f] rounded transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            {/* Overview Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <div className="bg-gradient-to-br from-[#0ea5e9]/20 to-[#0ea5e9]/5 border border-[#0ea5e9]/30 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-[#0ea5e9]">{dashboardStats.totalFiles}</div>
+                <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Files</div>
+              </div>
+              <div className="bg-gradient-to-br from-[#8b5cf6]/20 to-[#8b5cf6]/5 border border-[#8b5cf6]/30 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-[#8b5cf6]">{dashboardStats.totalFolders}</div>
+                <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Folders</div>
+              </div>
+              <div className="bg-gradient-to-br from-[#22c55e]/20 to-[#22c55e]/5 border border-[#22c55e]/30 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-[#22c55e]">{dashboardStats.maxDepth}</div>
+                <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Max Depth</div>
+              </div>
+              <div className="bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border border-[#f59e0b]/30 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-[#f59e0b]">{dashboardStats.totalCommits}</div>
+                <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Commits</div>
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              {/* Language Breakdown */}
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#00d4ff]" />
+                  File Types
+                </h3>
+                <div className="space-y-2">
+                  {dashboardStats.topLanguages.map(([ext, count]) => {
+                    const percentage = ((count / dashboardStats.totalFiles) * 100).toFixed(1);
+                    const color = PACK_FILE_COLORS[ext] || '#64748b';
+                    return (
+                      <div key={ext} className="flex items-center gap-2">
+                        <div className="w-12 text-[11px] font-mono text-[#94a3b8]">.{ext}</div>
+                        <div className="flex-1 h-2 bg-[#1e3a5f]/50 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%`, backgroundColor: color }}
+                          />
+                        </div>
+                        <div className="w-12 text-right text-[11px] text-[#64748b]">{count}</div>
+                      </div>
+              );
+            })}
+                </div>
+              </div>
+
+              {/* Top Folders */}
+              <div>
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#8b5cf6]" />
+                  Largest Folders
+                </h3>
+                <div className="space-y-2">
+                  {dashboardStats.topFolders.map((folder) => (
+                    <div 
+                      key={folder.id} 
+                      className="flex items-center gap-2 px-2 py-1.5 bg-[#1e3a5f]/20 rounded hover:bg-[#1e3a5f]/40 cursor-pointer transition-colors"
+                      onClick={() => {
+                        const node = data.nodes.find(n => n.id === folder.id);
+                        if (node) {
+                          onNodeSelect(node);
+                          setSelectedNode(node);
+                        }
+                        setShowDashboard(false);
+                      }}
+                    >
+                      <span className="text-[#8b5cf6]">📁</span>
+                      <span className="flex-1 text-[11px] text-[#94a3b8] truncate font-mono">{folder.name}</span>
+                      <span className="text-[10px] text-[#64748b] bg-[#1e3a5f] px-1.5 py-0.5 rounded">{folder.childCount}</span>
+      </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Contributors (if commits loaded) */}
+            {dashboardStats.topContributors.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                  Top Contributors
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {dashboardStats.topContributors.map((contributor, i) => (
+                    <div 
+                      key={i}
+                      className="flex items-center gap-2 px-2 py-1.5 bg-[#1e3a5f]/30 rounded-full border border-[#1e3a5f]"
+                    >
+                      <img 
+                        src={contributor.avatar} 
+                        alt={contributor.name}
+                        className="w-5 h-5 rounded-full"
+                      />
+                      <span className="text-[11px] text-[#94a3b8]">{contributor.name}</span>
+                      <span className="text-[10px] text-[#22c55e] font-medium">{contributor.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Size Info */}
+            {dashboardStats.totalSize > 0 && (
+              <div className="mt-6 pt-4 border-t border-[#1e3a5f] flex items-center justify-between text-[11px] text-[#64748b]">
+                <span>Total Size: <span className="text-[#94a3b8] font-medium">{(dashboardStats.totalSize / 1024).toFixed(1)} KB</span></span>
+                <span>Avg Depth: <span className="text-[#94a3b8] font-medium">{dashboardStats.avgDepth} levels</span></span>
+              </div>
+            )}
+
+            <div className="mt-5 pt-4 border-t border-[#1e3a5f] text-center">
+              <span className="text-xs text-[#64748b]">Press <kbd className="px-1.5 py-0.5 bg-[#1e3a5f] rounded text-white font-mono text-[10px]">d</kbd> to toggle dashboard</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Keyboard hint */}
       <div className="absolute bottom-4 right-4 text-[10px] text-[#475569] font-mono hidden sm:block">
         Press <kbd className="px-1 py-0.5 bg-[#1e3a5f] rounded text-[#64748b] font-mono">?</kbd> for shortcuts
       </div>
+
+      {/* Dashboard button */}
+      <button
+        onClick={() => setShowDashboard(true)}
+        className="absolute bottom-4 left-4 px-3 py-1.5 bg-[#0d1424]/90 border border-[#1e3a5f] rounded-lg text-[11px] text-[#94a3b8] hover:border-[#00d4ff] hover:text-[#00d4ff] transition-all hidden sm:flex items-center gap-1.5"
+      >
+        <span>📊</span>
+        <span>Dashboard</span>
+        <kbd className="px-1 py-0.5 bg-[#1e3a5f] rounded text-[#64748b] font-mono text-[9px] ml-1">d</kbd>
+      </button>
     </div>
   );
 };
