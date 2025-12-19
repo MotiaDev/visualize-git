@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
-import { RepoData, RepoNode, RepoLink } from '../types';
-import { ZoomIn, ZoomOut, Maximize2, Circle, GitBranch, History, X, Layers } from 'lucide-react';
+import { RepoData, RepoNode, RepoLink, RepoInfo } from '../types';
+import { ZoomIn, ZoomOut, Maximize2, Circle, GitBranch, History, X, Layers, Download, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import TimelinePlayer, { CommitData } from './TimelinePlayer';
+import { fetchStarAnalytics, StarAnalytics } from '../services/githubService';
 
 interface VisualizerProps {
   data: RepoData;
@@ -12,6 +13,8 @@ interface VisualizerProps {
   commits?: CommitData[];
   isLoadingCommits?: boolean;
   onLoadCommits?: () => void;
+  repoInfo?: RepoInfo | null;
+  token?: string;
 }
 
 type LayoutMode = 'force' | 'pack';
@@ -151,6 +154,8 @@ const Visualizer: React.FC<VisualizerProps> = ({
   commits = [],
   isLoadingCommits = false,
   onLoadCommits,
+  repoInfo,
+  token,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -198,6 +203,21 @@ const Visualizer: React.FC<VisualizerProps> = ({
   const [focusedNodeIndex, setFocusedNodeIndex] = useState<number>(-1);
   const [showHelp, setShowHelp] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [starAnalytics, setStarAnalytics] = useState<StarAnalytics | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState<'files' | 'stars'>('files');
+
+  // Fetch star analytics when dashboard is opened
+  useEffect(() => {
+    if (showDashboard && repoInfo && !starAnalytics && !isLoadingAnalytics) {
+      setIsLoadingAnalytics(true);
+      const [owner, repo] = repoInfo.fullName.split('/');
+      fetchStarAnalytics(owner, repo, token, false)
+        .then(setStarAnalytics)
+        .catch(err => console.error('Failed to fetch star analytics:', err))
+        .finally(() => setIsLoadingAnalytics(false));
+    }
+  }, [showDashboard, repoInfo, token, starAnalytics, isLoadingAnalytics]);
 
   // Toggle node expansion
   const toggleNodeExpansion = useCallback((nodeId: string) => {
@@ -1928,10 +1948,10 @@ const Visualizer: React.FC<VisualizerProps> = ({
           onClick={() => setShowDashboard(false)}
         >
           <div 
-            className="bg-[#0a0f1a] border border-[#1e3a5f] rounded-xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto"
+            className="bg-[#0a0f1a] border border-[#1e3a5f] rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">📊 Repository Dashboard</h2>
               <button 
                 onClick={() => setShowDashboard(false)}
@@ -1940,8 +1960,34 @@ const Visualizer: React.FC<VisualizerProps> = ({
                 <X size={18} />
               </button>
             </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 mb-5 p-1 bg-[#1e3a5f]/30 rounded-lg w-fit">
+              <button
+                onClick={() => setDashboardTab('files')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  dashboardTab === 'files' 
+                    ? 'bg-[#0ea5e9] text-white shadow' 
+                    : 'text-[#94a3b8] hover:text-white'
+                }`}
+              >
+                📁 Files & Folders
+              </button>
+              <button
+                onClick={() => setDashboardTab('stars')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  dashboardTab === 'stars' 
+                    ? 'bg-[#fbbf24] text-[#0a0f1a] shadow' 
+                    : 'text-[#94a3b8] hover:text-white'
+                }`}
+              >
+                ⭐ Star Analytics
+              </button>
+            </div>
             
-            {/* Overview Stats Grid */}
+            {/* Files Tab - Overview Stats Grid */}
+            {dashboardTab === 'files' && (
+              <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               <div className="bg-gradient-to-br from-[#0ea5e9]/20 to-[#0ea5e9]/5 border border-[#0ea5e9]/30 rounded-lg p-3 text-center">
                 <div className="text-2xl font-bold text-[#0ea5e9]">{dashboardStats.totalFiles}</div>
@@ -2048,6 +2094,239 @@ const Visualizer: React.FC<VisualizerProps> = ({
               <div className="mt-6 pt-4 border-t border-[#1e3a5f] flex items-center justify-between text-[11px] text-[#64748b]">
                 <span>Total Size: <span className="text-[#94a3b8] font-medium">{(dashboardStats.totalSize / 1024).toFixed(1)} KB</span></span>
                 <span>Avg Depth: <span className="text-[#94a3b8] font-medium">{dashboardStats.avgDepth} levels</span></span>
+              </div>
+            )}
+              </>
+            )}
+
+            {/* Stars Tab - Star Analytics */}
+            {dashboardTab === 'stars' && (
+              <div>
+                {isLoadingAnalytics ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-8 h-8 border-2 border-[#fbbf24] border-t-transparent rounded-full animate-spin mb-3" />
+                    <span className="text-[#64748b] text-sm">Loading complete star history...</span>
+                    <span className="text-[#475569] text-[10px] mt-1">This may take a moment for large repos</span>
+                  </div>
+                ) : starAnalytics ? (
+                  <>
+                    {/* Repo Age & Data Info */}
+                    <div className="flex items-center justify-between mb-4 text-[10px] text-[#64748b]">
+                      <span>📅 Created {starAnalytics.createdAt} ({starAnalytics.ageInDays} days ago)</span>
+                      <span className={`px-2 py-0.5 rounded ${starAnalytics.dataCompleteness >= 90 ? 'bg-[#22c55e]/20 text-[#22c55e]' : 'bg-[#fbbf24]/20 text-[#fbbf24]'}`}>
+                        {starAnalytics.dataCompleteness.toFixed(0)}% data coverage
+                      </span>
+                    </div>
+
+                    {/* Star Stats Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+                      <div className="bg-gradient-to-br from-[#fbbf24]/20 to-[#fbbf24]/5 border border-[#fbbf24]/30 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-[#fbbf24]">{starAnalytics.totalStars.toLocaleString()}</div>
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Total Stars</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-[#22c55e]/20 to-[#22c55e]/5 border border-[#22c55e]/30 rounded-lg p-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-2xl font-bold text-[#22c55e]">{starAnalytics.trends.avg7d}</span>
+                          {starAnalytics.trends.trend === 'up' && <TrendingUp size={14} className="text-[#22c55e]" />}
+                          {starAnalytics.trends.trend === 'down' && <TrendingDown size={14} className="text-[#ef4444]" />}
+                          {starAnalytics.trends.trend === 'stable' && <Minus size={14} className="text-[#64748b]" />}
+                        </div>
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wide">7d Avg/Day</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-[#0ea5e9]/20 to-[#0ea5e9]/5 border border-[#0ea5e9]/30 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-[#0ea5e9]">{starAnalytics.trends.avg30d}</div>
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wide">30d Avg/Day</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-[#8b5cf6]/20 to-[#8b5cf6]/5 border border-[#8b5cf6]/30 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-[#8b5cf6]">{starAnalytics.avgStarsPerDay.toFixed(1)}</div>
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Lifetime Avg</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-[#ec4899]/20 to-[#ec4899]/5 border border-[#ec4899]/30 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-[#ec4899]">{starAnalytics.trends.peakDay.stars}</div>
+                        <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Peak Day</div>
+                      </div>
+                    </div>
+
+                    {/* Complete Star History (Cumulative) */}
+                    <div className="mb-6">
+                      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#0ea5e9]" />
+                        Complete Star History (Since {starAnalytics.createdAt})
+                      </h3>
+                      <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                        <div className="flex items-end gap-px h-28">
+                          {(() => {
+                            // Sample the history to ~60 data points for display
+                            const history = starAnalytics.dailyHistory;
+                            const step = Math.max(1, Math.floor(history.length / 60));
+                            const sampled = history.filter((_, i) => i % step === 0 || i === history.length - 1);
+                            const maxCumulative = Math.max(...sampled.map(d => d.cumulative), 1);
+                            
+                            return sampled.map((day, i) => {
+                              const height = (day.cumulative / maxCumulative) * 100;
+                              return (
+                                <div 
+                                  key={i} 
+                                  className="flex-1 bg-gradient-to-t from-[#0ea5e9] to-[#22d3ee] rounded-t hover:from-[#0284c7] hover:to-[#06b6d4] transition-colors cursor-pointer group relative"
+                                  style={{ height: `${Math.max(height, 2)}%` }}
+                                >
+                                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-[#0a0f1a] border border-[#1e3a5f] rounded px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                    <div className="font-medium">{day.cumulative.toLocaleString()} ⭐</div>
+                                    <div className="text-[#64748b]">{day.date}</div>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                        <div className="flex justify-between mt-2 text-[9px] text-[#64748b]">
+                          <span>{starAnalytics.createdAt}</span>
+                          <span className="text-[#0ea5e9]">{starAnalytics.dailyHistory.length} days of history</span>
+                          <span>Today</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Daily Stars (Last 30 Days) */}
+                    <div className="mb-6">
+                      <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#fbbf24]" />
+                        Daily Stars (Last 30 Days)
+                      </h3>
+                      <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                        <div className="flex items-end gap-0.5 h-20">
+                          {starAnalytics.recentActivity.map((day, i) => {
+                            const maxStars = Math.max(...starAnalytics.recentActivity.map(d => d.daily), 1);
+                            const height = (day.daily / maxStars) * 100;
+                            const isPeak = day.date === starAnalytics.trends.peakDay.date;
+                            return (
+                              <div 
+                                key={i} 
+                                className={`flex-1 rounded-t transition-colors cursor-pointer group relative ${isPeak ? 'bg-[#ec4899]' : 'bg-[#fbbf24] hover:bg-[#f59e0b]'}`}
+                                style={{ height: `${Math.max(height, 2)}%` }}
+                              >
+                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0a0f1a] border border-[#1e3a5f] rounded px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                  <div className="font-medium">{day.daily} ⭐ {isPeak && '🏆'}</div>
+                                  <div className="text-[#64748b]">{day.date}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between mt-2 text-[9px] text-[#64748b]">
+                          <span>30 days ago</span>
+                          <span>Today</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hourly Activity (Last 7 Days) */}
+                    {starAnalytics.hourlyActivity && starAnalytics.hourlyActivity.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#a855f7]" />
+                          Hourly Activity (Last 7 Days)
+                        </h3>
+                        <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                          <div className="flex items-end gap-px h-16">
+                            {(() => {
+                              // Sample hourly data to ~84 points (12 per day)
+                              const hourly = starAnalytics.hourlyActivity;
+                              const step = Math.max(1, Math.floor(hourly.length / 84));
+                              const sampled = hourly.filter((_, i) => i % step === 0);
+                              const maxHourly = Math.max(...sampled.map(h => h.stars), 1);
+                              
+                              return sampled.map((hour, i) => {
+                                const height = (hour.stars / maxHourly) * 100;
+                                return (
+                                  <div 
+                                    key={i} 
+                                    className="flex-1 bg-[#a855f7] rounded-t hover:bg-[#9333ea] transition-colors cursor-pointer group relative"
+                                    style={{ height: `${Math.max(height, hour.stars > 0 ? 8 : 2)}%` }}
+                                  >
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0a0f1a] border border-[#1e3a5f] rounded px-1.5 py-0.5 text-[9px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                      <div className="font-medium">{hour.stars} ⭐</div>
+                                      <div className="text-[#64748b]">{new Date(hour.hour).toLocaleString()}</div>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                          <div className="flex justify-between mt-2 text-[9px] text-[#64748b]">
+                            <span>7 days ago</span>
+                            <span className="text-[#a855f7]">Hourly breakdown</span>
+                            <span>Now</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Growth & Peak Info */}
+                    <div className="grid sm:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                        <h4 className="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2">30d Growth</h4>
+                        <div className="flex items-baseline gap-2">
+                          <span className={`text-xl font-bold ${starAnalytics.trends.growthRate >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                            {starAnalytics.trends.growthRate >= 0 ? '+' : ''}{starAnalytics.trends.growthRate.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                        <h4 className="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2">Peak Day</h4>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-[#ec4899]">{starAnalytics.trends.peakDay.stars} ⭐</span>
+                          <span className="text-[11px] text-[#64748b]">{starAnalytics.trends.peakDay.date}</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                        <h4 className="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-2">Trend</h4>
+                        <div className="flex items-center gap-2">
+                          {starAnalytics.trends.trend === 'up' && <TrendingUp size={20} className="text-[#22c55e]" />}
+                          {starAnalytics.trends.trend === 'down' && <TrendingDown size={20} className="text-[#ef4444]" />}
+                          {starAnalytics.trends.trend === 'stable' && <Minus size={20} className="text-[#64748b]" />}
+                          <span className={`text-lg font-bold capitalize ${
+                            starAnalytics.trends.trend === 'up' ? 'text-[#22c55e]' : 
+                            starAnalytics.trends.trend === 'down' ? 'text-[#ef4444]' : 'text-[#64748b]'
+                          }`}>
+                            {starAnalytics.trends.trend === 'up' ? 'Rising' : starAnalytics.trends.trend === 'down' ? 'Declining' : 'Stable'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Export Options */}
+                    {repoInfo && (
+                      <div className="pt-4 border-t border-[#1e3a5f]">
+                        <h4 className="text-xs font-medium text-[#64748b] uppercase tracking-wide mb-3">Export Data</h4>
+                        <div className="flex gap-2 flex-wrap">
+                          <a
+                            href={`/api/github/export-stars/${repoInfo.fullName}?format=csv${token ? `&token=${token}` : ''}`}
+                            download
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e3a5f]/50 rounded-lg text-[11px] text-[#94a3b8] hover:bg-[#1e3a5f] hover:text-white transition-colors"
+                          >
+                            <Download size={12} />
+                            CSV (Full History)
+                          </a>
+                          <a
+                            href={`/api/github/export-stars/${repoInfo.fullName}?format=json${token ? `&token=${token}` : ''}`}
+                            download
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e3a5f]/50 rounded-lg text-[11px] text-[#94a3b8] hover:bg-[#1e3a5f] hover:text-white transition-colors"
+                          >
+                            <Download size={12} />
+                            JSON (Full History)
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <span className="text-4xl mb-3">⭐</span>
+                    <span className="text-[#64748b] text-sm mb-2">Star analytics requires a GitHub token</span>
+                    <span className="text-[#475569] text-xs">Add a token to see complete daily star history and trends</span>
+                  </div>
+                )}
               </div>
             )}
 

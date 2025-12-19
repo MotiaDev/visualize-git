@@ -16,10 +16,12 @@ declare module 'motia' {
     'WatchRepo': ApiRouteHandler<{ owner: string; repo: string; token?: string }, ApiResponse<200, { success: boolean; message: string; watchId: string }> | ApiResponse<500, { error: string }>, never>
     'TrackStars': ApiRouteHandler<{ owner: string; repo: string; token?: string }, ApiResponse<200, { success: boolean; stars: number; name: string; fullName: string }> | ApiResponse<500, { error: string }>, { topic: 'fetch-star-history'; data: { owner: string; repo: string; token?: string } }>
     'GetStarHistory': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { owner: string; repo: string; totalStars: number; history: Array<{ date: string; stars: number }> }> | ApiResponse<403, { error: string }> | ApiResponse<500, { error: string }>, never>
+    'GetStarAnalytics': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { owner: string; repo: string; totalStars: number; createdAt: string; ageInDays: number; avgStarsPerDay: number; dailyHistory: Array<{ date: string; daily: number; cumulative: number }>; hourlyActivity: Array<{ hour: string; stars: number }>; trends: { avg7d: number; avg30d: number; peakDay: { date: string; stars: number }; velocity: number; trend: 'up' | 'down' | 'stable'; growthRate: number }; recentActivity: Array<{ date: string; daily: number; cumulative: number }>; dataCompleteness: number }> | ApiResponse<403, { error: string }> | ApiResponse<500, { error: string }>, never>
     'GetRepoTree': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, { nodes: Array<{ id: string; name: string; type: 'blob' | 'tree'; path: string; size?: number; extension?: string; parentId?: string | unknown; fx?: number; fy?: number }>; links: Array<{ source: string; target: string }> }> | ApiResponse<403, { error: string }> | ApiResponse<500, { error: string }>, never>
     'Get Repository Details': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'Get Commits': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'FetchStarHistoryEvent': EventHandler<{ owner: string; repo: string; token?: string }, never>
+    'ExportStarData': ApiRouteHandler<Record<string, unknown>, ApiResponse<200, unknown> | ApiResponse<403, { error: string }> | ApiResponse<500, { error: string }>, never>
     'EmbedStarHistory': ApiRouteHandler<Record<string, unknown>, unknown, never>
     'EmbedStarBadge': ApiRouteHandler<Record<string, unknown>, unknown, never>
   }

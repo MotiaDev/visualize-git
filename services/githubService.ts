@@ -1,10 +1,15 @@
 import { RepoInfo, RepoData } from '../types'
 
+// Vite environment variables
+declare const import_meta_env: { PROD: boolean; VITE_API_PORT?: string }
+
 // Motia backend base URL
 // In production (Vercel), use relative URLs so it goes through the proxy
 // In development, use localhost
-const isProduction = import.meta.env.PROD
-const API_BASE = isProduction ? '' : 'http://localhost:3001'
+const isProduction = (import.meta as unknown as { env: typeof import_meta_env }).env.PROD
+// Motia dev server runs on 3000 by default, but may use 3001 if 3000 is busy
+const DEV_PORT = (import.meta as unknown as { env: typeof import_meta_env }).env.VITE_API_PORT || '3001'
+const API_BASE = isProduction ? '' : `http://localhost:${DEV_PORT}`
 
 export const fetchRepoDetails = async (
   owner: string,
@@ -226,6 +231,66 @@ export const fetchCommits = async (
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }))
     throw new Error(error.error || 'Failed to fetch commits')
+  }
+
+  return response.json()
+}
+
+// Star Analytics - daily breakdown and trends
+export interface DailyStar {
+  date: string
+  daily: number // Stars gained that day
+  cumulative: number // Total stars up to that day
+}
+
+export interface HourlyStar {
+  hour: string // ISO timestamp for the hour
+  stars: number
+}
+
+export interface StarTrends {
+  avg7d: number
+  avg30d: number
+  peakDay: { date: string; stars: number }
+  velocity: number
+  trend: 'up' | 'down' | 'stable'
+  growthRate: number // Percentage growth last 30d
+}
+
+export interface StarAnalytics {
+  owner: string
+  repo: string
+  totalStars: number
+  createdAt: string
+  ageInDays: number
+  avgStarsPerDay: number
+  dailyHistory: DailyStar[] // Complete history from repo creation
+  hourlyActivity: HourlyStar[] // Last 7 days hourly
+  trends: StarTrends
+  recentActivity: DailyStar[] // Last 30 days
+  dataCompleteness: number // Percentage of stars we have dates for
+}
+
+export const fetchStarAnalytics = async (
+  owner: string,
+  repo: string,
+  token?: string,
+  fullHistory: boolean = false
+): Promise<StarAnalytics> => {
+  const params = new URLSearchParams()
+  if (token) {
+    params.set('token', token)
+  }
+  if (fullHistory) {
+    params.set('full', 'true')
+  }
+
+  const url = `${API_BASE}/api/github/star-analytics/${owner}/${repo}?${params}`
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: response.statusText }))
+    throw new Error(error.error || 'Failed to fetch star analytics')
   }
 
   return response.json()

@@ -39,13 +39,21 @@
         "x": 354,
         "y": 389
       },
+      "src/github/get-star-analytics.step.ts": {
+        "x": 0,
+        "y": 652
+      },
       "src/github/get-repo-tree.step.ts": {
-        "x": -571,
-        "y": 389
+        "x": 0,
+        "y": 652
       },
       "src/github/fetch-star-history-event.step.ts": {
         "x": 366,
         "y": 672
+      },
+      "src/github/export-star-data.step.ts": {
+        "x": 0,
+        "y": 1140
       }
     }
   }

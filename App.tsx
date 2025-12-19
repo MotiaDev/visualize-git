@@ -257,6 +257,8 @@ const App: React.FC = () => {
               commits={commits}
               isLoadingCommits={isLoadingCommits}
               onLoadCommits={handleLoadCommits}
+              repoInfo={repoInfo}
+              token={currentToken}
                />
            ) : (
             <div className="w-full h-full flex flex-col items-center justify-center">
