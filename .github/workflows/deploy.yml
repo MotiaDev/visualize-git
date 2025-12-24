@@ -66,9 +66,12 @@ jobs:
       - name: Generate types
         run: npx motia generate-types
 
-      - name: Create Env file
+      - name: Create Env file from Secrets
         run: |
+          # Create .env file from GitHub Secrets (secure way to pass env vars)
           echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN }}" > .env
+          # Add any other environment variables your app needs here
+          # echo "OTHER_VAR=${{ secrets.OTHER_VAR }}" >> .env
 
       - name: Deploy to Motia Cloud
         run: |
@@ -78,7 +81,7 @@ jobs:
             --environment-id ${{ env.MOTIA_ENV_ID }} \
             --version-name "${{ env.VERSION_NAME }}" \
             --version-description "${{ env.VERSION_DESCRIPTION }}" \
-            --env-file .env.local
+            --env-file .env
 
       - name: Deployment Summary
         run: |
