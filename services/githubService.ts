@@ -295,3 +295,52 @@ export const fetchStarAnalytics = async (
 
   return response.json()
 }
+
+// Contribution stats (PRs, issues, reviews, activity patterns)
+export interface ContributionStats {
+  totalCommits: number
+  totalPullRequests: number
+  totalIssues: number
+  totalReviews: number
+  activityPatterns: {
+    busiestDay: { day: string; count: number }
+    peakHours: { hour: number; count: number }[]
+    peakMonth: { month: string; count: number }
+    weekdayDistribution: { day: string; count: number }[]
+    hourlyDistribution: { hour: number; count: number }[]
+  }
+  topContributors: {
+    login: string
+    avatar: string
+    commits: number
+    pullRequests: number
+    issues: number
+  }[]
+  recentCommitters: {
+    login: string
+    avatar: string
+    commits: number
+    lastCommitDate: string
+  }[]
+}
+
+export const fetchContributions = async (
+  owner: string,
+  repo: string,
+  token?: string
+): Promise<ContributionStats> => {
+  const params = new URLSearchParams()
+  if (token) {
+    params.set('token', token)
+  }
+
+  const url = `${API_BASE}/api/github/contributions/${owner}/${repo}?${params}`
+  const response = await fetch(url)
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: response.statusText }))
+    throw new Error(error.error || 'Failed to fetch contributions')
+  }
+
+  return response.json()
+}

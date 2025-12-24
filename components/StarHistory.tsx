@@ -262,10 +262,12 @@ const StarHistory: React.FC<StarHistoryProps> = ({ repoInfo, onOpenFullPage, tok
                   {(repoInfo.stars ?? 0).toLocaleString()}
                 </span>
               </div>
-              <span className="text-[8px] text-[#22c55e] flex items-center gap-0.5">
-                <TrendingUp size={8} />
-                {error ? 'simulated' : `${history.length} pts`}
-              </span>
+              {history.length >= 2 && (
+                <span className="text-[8px] text-[#22c55e] flex items-center gap-0.5">
+                  <TrendingUp size={8} />
+                  {error ? 'trend' : 'growth'}
+                </span>
+              )}
             </div>
           </>
         ) : (

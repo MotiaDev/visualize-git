@@ -247,22 +247,22 @@ const App: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col relative">
         
-        {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-20 p-3 sm:p-4">
-          <div className="max-w-lg mx-auto pr-10 sm:pr-0">
-            {/* Logo + GitHub Link */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-[#00d4ff]">
+        {/* Header - compact and centered */}
+        <div className="absolute top-0 left-0 right-0 z-40 p-2 sm:p-3 pointer-events-none">
+          <div className="max-w-md mx-auto pointer-events-auto">
+            {/* Logo + GitHub Link - more compact */}
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#00d4ff]">
                 <circle cx="12" cy="12" r="3" fill="currentColor"/>
                 <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1" opacity="0.5"/>
                 <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="0.5" opacity="0.3"/>
               </svg>
-              <h1 className="text-lg font-semibold tracking-tight text-white">
+              <h1 className="text-base sm:text-lg font-semibold tracking-tight text-white">
                 git<span className="text-[#00d4ff]">-history</span>
               </h1>
               {isWatching && (
-                <span className="flex items-center gap-1 text-[10px] text-[#22c55e] bg-[#22c55e]/10 px-2 py-0.5 rounded-full border border-[#22c55e]/20">
-                  <Radio size={8} className="animate-pulse" />
+                <span className="flex items-center gap-1 text-[9px] text-[#22c55e] bg-[#22c55e]/10 px-1.5 py-0.5 rounded-full border border-[#22c55e]/20">
+                  <Radio size={7} className="animate-pulse" />
                   live
                 </span>
               )}
@@ -270,34 +270,36 @@ const App: React.FC = () => {
                 href="https://github.com/MotiaDev/visualize-git"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-[#94a3b8] hover:text-white bg-[#1e3a5f]/50 hover:bg-[#1e3a5f] border border-[#1e3a5f] rounded-full transition-colors ml-1"
+                className="flex items-center gap-1 px-1.5 py-0.5 text-[9px] text-[#94a3b8] hover:text-white bg-[#1e3a5f]/50 hover:bg-[#1e3a5f] border border-[#1e3a5f] rounded-full transition-colors"
                 title="View source on GitHub - Open Source!"
               >
-                <Github size={12} />
+                <Github size={10} />
                 <span className="hidden sm:inline">Open Source</span>
               </a>
             </div>
             
-            {/* Controls */}
-             <Controls isLoading={loading} onVisualize={handleVisualize} />
-            
-            {/* Search Bar - only show when we have data */}
-            {data.nodes.length > 0 && (
-              <div className="mt-2">
-                <SearchBar 
-                  nodes={data.nodes} 
-                  onHighlight={handleHighlight}
-                  onFocusNode={handleFocusNode}
-                />
-              </div>
-            )}
-            
-            {/* Error */}
-             {error && (
-              <div className="mt-3 bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] px-3 py-2 rounded text-xs">
-                    {error}
-              </div>
-             )}
+            {/* Controls - in a contained box */}
+            <div className="bg-[#0a0f1a]/90 backdrop-blur-sm border border-[#1e3a5f] rounded-lg p-2 sm:p-3 shadow-lg">
+              <Controls isLoading={loading} onVisualize={handleVisualize} />
+              
+              {/* Search Bar - only show when we have data */}
+              {data.nodes.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-[#1e3a5f]">
+                  <SearchBar 
+                    nodes={data.nodes} 
+                    onHighlight={handleHighlight}
+                    onFocusNode={handleFocusNode}
+                  />
+                </div>
+              )}
+              
+              {/* Error */}
+              {error && (
+                <div className="mt-2 bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] px-2 py-1.5 rounded text-[10px]">
+                  {error}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

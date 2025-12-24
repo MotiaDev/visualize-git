@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import { RepoData, RepoNode, RepoLink, RepoInfo } from '../types';
-import { ZoomIn, ZoomOut, Maximize2, Circle, GitBranch, History, X, Layers, Download, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Circle, GitBranch, History, X, Layers, Download, TrendingUp, TrendingDown, Minus, Clock, GitPullRequest, AlertCircle, MessageSquare, Calendar, Activity } from 'lucide-react';
 import TimelinePlayer, { CommitData } from './TimelinePlayer';
-import { fetchStarAnalytics, StarAnalytics } from '../services/githubService';
+import { fetchStarAnalytics, StarAnalytics, fetchContributions, ContributionStats } from '../services/githubService';
 
 interface VisualizerProps {
   data: RepoData;
@@ -206,8 +206,10 @@ const Visualizer: React.FC<VisualizerProps> = ({
   const [starAnalytics, setStarAnalytics] = useState<StarAnalytics | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
   const [dashboardTab, setDashboardTab] = useState<'files' | 'stars'>('files');
+  const [contributionStats, setContributionStats] = useState<ContributionStats | null>(null);
+  const [isLoadingContributions, setIsLoadingContributions] = useState(false);
 
-  // Fetch star analytics when dashboard is opened
+  // Fetch star analytics and contributions when dashboard is opened
   useEffect(() => {
     if (showDashboard && repoInfo && !starAnalytics && !isLoadingAnalytics) {
       setIsLoadingAnalytics(true);
@@ -218,6 +220,21 @@ const Visualizer: React.FC<VisualizerProps> = ({
         .finally(() => setIsLoadingAnalytics(false));
     }
   }, [showDashboard, repoInfo, token, starAnalytics, isLoadingAnalytics]);
+
+  // Auto-load commits and contributions when dashboard is opened
+  useEffect(() => {
+    if (showDashboard && repoInfo && commits.length === 0 && onLoadCommits && !isLoadingCommits) {
+      onLoadCommits();
+    }
+    if (showDashboard && repoInfo && !contributionStats && !isLoadingContributions) {
+      setIsLoadingContributions(true);
+      const [owner, repo] = repoInfo.fullName.split('/');
+      fetchContributions(owner, repo, token)
+        .then(setContributionStats)
+        .catch(err => console.error('Failed to fetch contributions:', err))
+        .finally(() => setIsLoadingContributions(false));
+    }
+  }, [showDashboard, repoInfo, commits.length, onLoadCommits, isLoadingCommits, contributionStats, isLoadingContributions, token]);
 
   // Toggle node expansion
   const toggleNodeExpansion = useCallback((nodeId: string) => {
@@ -1295,8 +1312,8 @@ const Visualizer: React.FC<VisualizerProps> = ({
         <g ref={gRef} style={{ pointerEvents: 'all' }} />
       </svg>
       
-      {/* View Options - Compact toggle in top-left, smaller on mobile */}
-      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-50 flex items-center gap-1 sm:gap-2" style={{ pointerEvents: 'auto' }}>
+      {/* View Options - Positioned at bottom-left to avoid header overlap */}
+      <div className="absolute bottom-20 sm:bottom-4 left-2 sm:left-4 z-30 flex items-center gap-1 sm:gap-2" style={{ pointerEvents: 'auto' }}>
         {/* Simple view mode toggle - only show when expanded */}
         {showLayoutToggle ? (
           <div className="flex gap-1 bg-[#0d1424] border border-[#1e3a5f] rounded-lg p-1 shadow-lg">
@@ -1425,9 +1442,9 @@ const Visualizer: React.FC<VisualizerProps> = ({
       </div>
 
       {/* Hovered Node Info - positioned below header with high z-index */}
-      {/* Hovered node tooltip - positioned lower on mobile */}
+      {/* Hovered node tooltip - positioned in middle of screen */}
       {hoveredNode && (
-        <div className="absolute top-24 sm:top-44 left-1/2 -translate-x-1/2 bg-[#0d1424]/95 border border-[#1e3a5f] rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 pointer-events-none z-30 shadow-lg max-w-[90vw]">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0d1424]/95 border border-[#1e3a5f] rounded-lg px-3 py-2 pointer-events-none z-30 shadow-lg max-w-[90vw]">
           <div className="flex items-center gap-2">
             <span 
               className="w-3 h-3 rounded-full" 
@@ -1451,8 +1468,8 @@ const Visualizer: React.FC<VisualizerProps> = ({
       )}
 
       
-      {/* Zoom Controls */}
-      <div className="absolute bottom-4 right-4 flex flex-col gap-1">
+      {/* Zoom Controls - positioned above keyboard hint, shifts left when sidebar open */}
+      <div className={`absolute bottom-12 flex flex-col gap-1 z-20 transition-all ${selectedNode ? 'right-80' : 'right-4'}`}>
         <button onClick={handleZoomIn} className="p-2 bg-[#0d1424] hover:bg-[#1a2744] border border-[#1e3a5f] rounded text-[#64748b] hover:text-[#00d4ff] transition-colors">
           <ZoomIn size={16} />
         </button>
@@ -1620,8 +1637,8 @@ const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       )}
 
-      {/* Legend - Shows colors based on layout mode (shift left when panel open) */}
-      <div className={`absolute top-4 bg-[#0d1424]/90 border border-[#1e3a5f] rounded px-3 py-2 hidden sm:block transition-all ${selectedNode ? 'right-84' : 'right-4'}`}>
+      {/* Legend - Only show when View Options panel is expanded, positioned above it */}
+      <div className={`absolute bottom-28 sm:bottom-16 left-4 bg-[#0d1424]/90 border border-[#1e3a5f] rounded px-2 py-1.5 z-10 transition-all ${showLayoutToggle ? 'block' : 'hidden'}`}>
         {layoutMode === 'force' ? (
           /* Force mode: Original simple colors */
           <div className="text-[10px] text-[#64748b] space-y-1">
@@ -1677,10 +1694,10 @@ const Visualizer: React.FC<VisualizerProps> = ({
         )}
       </div>
 
-      {/* Tip for large repos - hidden on mobile to avoid overlap */}
-      {isLargeGraph && !collapsibleMode && layoutMode === 'force' && (
-        <div className="absolute top-52 left-4 z-30 max-w-xs hidden sm:block">
-          <div className="bg-[#0d1424]/95 border border-[#f59e0b]/50 rounded-lg px-3 py-2 text-[11px]">
+      {/* Tip for large repos - positioned at bottom above View Options */}
+      {isLargeGraph && !collapsibleMode && layoutMode === 'force' && !showLayoutToggle && (
+        <div className="absolute bottom-32 sm:bottom-16 left-4 z-20 max-w-xs hidden sm:block">
+          <div className="bg-[#0d1424]/95 border border-[#f59e0b]/50 rounded-lg px-3 py-2 text-[10px]">
             <span className="text-[#f59e0b] font-medium">💡 Large repo ({nodeCount} files)</span>
             <span className="text-[#94a3b8]"> — Try </span>
             <button 
@@ -1698,15 +1715,15 @@ const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       )}
 
-      {/* Tip when in collapsible mode - hidden on mobile */}
-      {collapsibleMode && expandedNodes.size <= 1 && (
-        <div className="absolute top-16 left-4 z-40 max-w-sm hidden sm:block">
-          <div className="bg-[#0d1424]/95 border border-[#8b5cf6]/50 rounded-lg px-4 py-3 text-xs">
+      {/* Tip when in collapsible mode - positioned at bottom above View Options */}
+      {collapsibleMode && expandedNodes.size <= 1 && !showLayoutToggle && (
+        <div className="absolute bottom-32 sm:bottom-16 left-4 z-20 max-w-xs hidden sm:block">
+          <div className="bg-[#0d1424]/95 border border-[#8b5cf6]/50 rounded-lg px-3 py-2 text-xs">
             <div className="flex items-start gap-2">
-              <span className="text-xl">🌳</span>
+              <span className="text-lg">🌳</span>
               <div>
-                <span className="text-[#8b5cf6] font-semibold">Tree Mode</span>
-                <p className="text-[#94a3b8] mt-1 leading-relaxed">
+                <span className="text-[#8b5cf6] font-semibold text-[11px]">Tree Mode</span>
+                <p className="text-[#94a3b8] mt-0.5 leading-relaxed text-[10px]">
                   Click <span className="text-[#22c55e] font-mono">+</span> on folders to expand, 
                   or click any node for details.
                 </p>
@@ -1824,15 +1841,15 @@ const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       </div>
 
-      {/* Timeline Panel (Gource-style git history) */}
+      {/* Timeline Panel (Gource-style git history) - higher z-index to avoid overlap */}
       {showTimeline && (
-        <div className="absolute bottom-20 sm:bottom-16 left-4 right-4 sm:right-auto sm:w-96 z-30">
-          <div className="relative">
+        <div className="absolute bottom-24 sm:bottom-20 left-4 right-4 sm:left-auto sm:right-4 sm:w-[400px] z-50">
+          <div className="relative bg-[#0a0f1a] border border-[#1e3a5f] rounded-lg shadow-2xl">
             <button
               onClick={() => setShowTimeline(false)}
-              className="absolute -top-2 -right-2 p-1 bg-[#1e3a5f] hover:bg-[#2d4a6f] rounded-full text-[#64748b] hover:text-white z-10"
+              className="absolute -top-2 -right-2 p-1.5 bg-[#f59e0b] hover:bg-[#d97706] rounded-full text-[#0d1424] z-10 shadow-lg"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
             <TimelinePlayer
               commits={commits}
@@ -1944,28 +1961,28 @@ const Visualizer: React.FC<VisualizerProps> = ({
       {/* Dashboard Modal */}
       {showDashboard && (
         <div 
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm p-2 sm:p-4"
           onClick={() => setShowDashboard(false)}
         >
           <div 
-            className="bg-[#0a0f1a] border border-[#1e3a5f] rounded-xl p-6 max-w-3xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto"
+            className="bg-[#0a0f1a] border border-[#1e3a5f] rounded-xl p-3 sm:p-6 max-w-3xl w-full shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">📊 Repository Dashboard</h2>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h2 className="text-base sm:text-xl font-bold text-white">📊 Repository Dashboard</h2>
               <button 
                 onClick={() => setShowDashboard(false)}
-                className="p-1 text-[#64748b] hover:text-white hover:bg-[#1e3a5f] rounded transition-colors"
+                className="p-1.5 text-[#64748b] hover:text-white hover:bg-[#1e3a5f] rounded transition-colors"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-5 p-1 bg-[#1e3a5f]/30 rounded-lg w-fit">
+            <div className="flex gap-1 mb-4 sm:mb-5 p-1 bg-[#1e3a5f]/30 rounded-lg w-fit">
               <button
                 onClick={() => setDashboardTab('files')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                   dashboardTab === 'files' 
                     ? 'bg-[#0ea5e9] text-white shadow' 
                     : 'text-[#94a3b8] hover:text-white'
@@ -1975,7 +1992,7 @@ const Visualizer: React.FC<VisualizerProps> = ({
               </button>
               <button
                 onClick={() => setDashboardTab('stars')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
                   dashboardTab === 'stars' 
                     ? 'bg-[#fbbf24] text-[#0a0f1a] shadow' 
                     : 'text-[#94a3b8] hover:text-white'
@@ -2002,10 +2019,168 @@ const Visualizer: React.FC<VisualizerProps> = ({
                 <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Max Depth</div>
               </div>
               <div className="bg-gradient-to-br from-[#f59e0b]/20 to-[#f59e0b]/5 border border-[#f59e0b]/30 rounded-lg p-3 text-center">
-                <div className="text-2xl font-bold text-[#f59e0b]">{dashboardStats.totalCommits}</div>
+                <div className="text-2xl font-bold text-[#f59e0b]">
+                  {isLoadingContributions ? (
+                    <div className="w-5 h-5 border-2 border-[#f59e0b] border-t-transparent rounded-full animate-spin mx-auto" />
+                  ) : (
+                    contributionStats?.totalCommits || dashboardStats.totalCommits
+                  )}
+                </div>
                 <div className="text-[10px] text-[#64748b] uppercase tracking-wide">Commits</div>
               </div>
             </div>
+
+            {/* Contributions Breakdown */}
+            {(contributionStats || isLoadingContributions) && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <Activity size={14} className="text-[#22c55e]" />
+                  Total Contributions
+                </h3>
+                {isLoadingContributions ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="w-6 h-6 border-2 border-[#22c55e] border-t-transparent rounded-full animate-spin" />
+                    <span className="ml-2 text-[#64748b] text-sm">Loading contributions...</span>
+                  </div>
+                ) : contributionStats && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-[#1e3a5f]/30 border border-[#1e3a5f] rounded-lg p-2 sm:p-3 flex items-center gap-2">
+                      <div className="p-1.5 sm:p-2 bg-[#f59e0b]/20 rounded-lg shrink-0">
+                        <History size={14} className="text-[#f59e0b]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-base sm:text-lg font-bold text-white">{contributionStats.totalCommits.toLocaleString()}</div>
+                        <div className="text-[9px] sm:text-[10px] text-[#64748b] truncate">Commits</div>
+                      </div>
+                    </div>
+                    <div className="bg-[#1e3a5f]/30 border border-[#1e3a5f] rounded-lg p-2 sm:p-3 flex items-center gap-2">
+                      <div className="p-1.5 sm:p-2 bg-[#8b5cf6]/20 rounded-lg shrink-0">
+                        <GitPullRequest size={14} className="text-[#8b5cf6]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-base sm:text-lg font-bold text-white">{contributionStats.totalPullRequests.toLocaleString()}</div>
+                        <div className="text-[9px] sm:text-[10px] text-[#64748b] truncate">Pull Requests</div>
+                      </div>
+                    </div>
+                    <div className="bg-[#1e3a5f]/30 border border-[#1e3a5f] rounded-lg p-2 sm:p-3 flex items-center gap-2">
+                      <div className="p-1.5 sm:p-2 bg-[#22c55e]/20 rounded-lg shrink-0">
+                        <AlertCircle size={14} className="text-[#22c55e]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-base sm:text-lg font-bold text-white">{contributionStats.totalIssues.toLocaleString()}</div>
+                        <div className="text-[9px] sm:text-[10px] text-[#64748b] truncate">Issues</div>
+                      </div>
+                    </div>
+                    <div className="bg-[#1e3a5f]/30 border border-[#1e3a5f] rounded-lg p-2 sm:p-3 flex items-center gap-2">
+                      <div className="p-1.5 sm:p-2 bg-[#0ea5e9]/20 rounded-lg shrink-0">
+                        <MessageSquare size={14} className="text-[#0ea5e9]" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-base sm:text-lg font-bold text-white">~{contributionStats.totalReviews.toLocaleString()}</div>
+                        <div className="text-[9px] sm:text-[10px] text-[#64748b] truncate">Reviews (est)</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Activity Patterns */}
+            {contributionStats?.activityPatterns && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <Clock size={14} className="text-[#fbbf24]" />
+                  Activity Patterns
+                </h3>
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {/* Busiest Day */}
+                  <div className="bg-gradient-to-br from-[#ec4899]/20 to-[#ec4899]/5 border border-[#ec4899]/30 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Calendar size={12} className="text-[#ec4899] shrink-0" />
+                      <span className="text-[8px] sm:text-[10px] text-[#64748b] uppercase tracking-wide truncate">Busiest Day</span>
+                    </div>
+                    <div className="text-sm sm:text-lg font-bold text-[#ec4899] truncate">{contributionStats.activityPatterns.busiestDay.day}</div>
+                    <div className="text-[9px] sm:text-[11px] text-[#94a3b8]">{contributionStats.activityPatterns.busiestDay.count}c</div>
+                  </div>
+                  
+                  {/* Peak Hours */}
+                  <div className="bg-gradient-to-br from-[#fbbf24]/20 to-[#fbbf24]/5 border border-[#fbbf24]/30 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Clock size={12} className="text-[#fbbf24] shrink-0" />
+                      <span className="text-[8px] sm:text-[10px] text-[#64748b] uppercase tracking-wide truncate">Peak Hours</span>
+                    </div>
+                    <div className="text-sm sm:text-lg font-bold text-[#fbbf24] truncate">
+                      {contributionStats.activityPatterns.peakHours.slice(0, 1).map(h => 
+                        `${h.hour.toString().padStart(2, '0')}:00`
+                      ).join('')}
+                    </div>
+                    <div className="text-[9px] sm:text-[11px] text-[#94a3b8]">
+                      {contributionStats.activityPatterns.peakHours[0]?.count || 0}c
+                    </div>
+                  </div>
+                  
+                  {/* Peak Month */}
+                  <div className="bg-gradient-to-br from-[#22d3ee]/20 to-[#22d3ee]/5 border border-[#22d3ee]/30 rounded-lg p-2 sm:p-3">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Activity size={12} className="text-[#22d3ee] shrink-0" />
+                      <span className="text-[8px] sm:text-[10px] text-[#64748b] uppercase tracking-wide truncate">Peak Month</span>
+                    </div>
+                    <div className="text-sm sm:text-lg font-bold text-[#22d3ee] truncate">{contributionStats.activityPatterns.peakMonth.month}</div>
+                    <div className="text-[9px] sm:text-[11px] text-[#94a3b8]">{contributionStats.activityPatterns.peakMonth.count}c</div>
+                  </div>
+                </div>
+
+                {/* Charts in a grid on larger screens */}
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {/* Weekday Distribution Chart */}
+                  <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                    <div className="text-[9px] sm:text-[10px] text-[#64748b] uppercase tracking-wide mb-2">Weekly Activity</div>
+                    <div className="flex items-end gap-1" style={{ height: '60px' }}>
+                      {contributionStats.activityPatterns.weekdayDistribution.map((day, i) => {
+                        const maxCount = Math.max(...contributionStats.activityPatterns.weekdayDistribution.map(d => d.count), 1);
+                        const heightPx = Math.max((day.count / maxCount) * 48, 4); // 48px max height, 4px min
+                        const isMax = day.count === maxCount && day.count > 0;
+                        return (
+                          <div key={i} className="flex-1 flex flex-col items-center justify-end">
+                            <div 
+                              className={`w-full rounded-t transition-all ${isMax ? 'bg-[#ec4899]' : 'bg-[#3b82f6]'}`}
+                              style={{ height: `${heightPx}px` }}
+                              title={`${day.day}: ${day.count} commits`}
+                            />
+                            <span className="text-[8px] text-[#64748b] mt-1">{day.day.slice(0, 2)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Hourly Distribution Chart */}
+                  <div className="bg-[#1e3a5f]/20 rounded-lg p-3">
+                    <div className="text-[9px] sm:text-[10px] text-[#64748b] uppercase tracking-wide mb-2">Hourly (24h)</div>
+                    <div className="flex items-end gap-px" style={{ height: '48px' }}>
+                      {contributionStats.activityPatterns.hourlyDistribution.map((hour, i) => {
+                        const maxCount = Math.max(...contributionStats.activityPatterns.hourlyDistribution.map(h => h.count), 1);
+                        const heightPx = Math.max((hour.count / maxCount) * 40, 2); // 40px max, 2px min
+                        const isPeak = contributionStats.activityPatterns.peakHours.some(p => p.hour === hour.hour);
+                        return (
+                          <div 
+                            key={i}
+                            className={`flex-1 rounded-t transition-all ${isPeak ? 'bg-[#fbbf24]' : hour.count > 0 ? 'bg-[#3b82f6]' : 'bg-[#1e3a5f]'}`}
+                            style={{ height: `${heightPx}px` }}
+                            title={`${hour.hour}:00 - ${hour.count} commits`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between mt-1 text-[8px] text-[#475569]">
+                      <span>0</span>
+                      <span>12</span>
+                      <span>23</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid sm:grid-cols-2 gap-6">
               {/* Language Breakdown */}
@@ -2063,8 +2238,93 @@ const Visualizer: React.FC<VisualizerProps> = ({
               </div>
             </div>
 
-            {/* Contributors (if commits loaded) */}
-            {dashboardStats.topContributors.length > 0 && (
+            {/* Top Contributors from API (if loaded) */}
+            {contributionStats?.topContributors && contributionStats.topContributors.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#fbbf24]" />
+                  Top Contributors
+                </h3>
+                <div className="space-y-2">
+                  {contributionStats.topContributors.map((contributor, i) => (
+                    <div 
+                      key={i}
+                      className="flex items-center gap-3 px-3 py-2 bg-[#1e3a5f]/20 rounded-lg border border-[#1e3a5f]/50 hover:bg-[#1e3a5f]/40 transition-colors"
+                    >
+                      <div className="text-[#fbbf24] font-bold text-sm w-5">#{i + 1}</div>
+                      {contributor.avatar ? (
+                        <img 
+                          src={contributor.avatar} 
+                          alt={contributor.login}
+                          className="w-8 h-8 rounded-full shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[#1e3a5f] flex items-center justify-center text-[#64748b] text-xs shrink-0">
+                          {contributor.login.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] text-white font-medium truncate">{contributor.login}</div>
+                        <div className="flex items-center gap-2 text-[9px]">
+                          {contributor.commits > 0 && (
+                            <span className="text-[#f59e0b]" title="Commits">
+                              {contributor.commits.toLocaleString()} commits
+                            </span>
+                          )}
+                          {contributor.pullRequests > 0 && (
+                            <span className="text-[#8b5cf6]" title="Pull Requests">
+                              {contributor.pullRequests} PRs
+                            </span>
+                          )}
+                          {contributor.issues > 0 && (
+                            <span className="text-[#22c55e]" title="Issues">
+                              {contributor.issues} issues
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Committers (Last 7 Days) */}
+            {contributionStats?.recentCommitters && contributionStats.recentCommitters.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                  Recent Activity (Last 7 Days)
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {contributionStats.recentCommitters.map((committer, i) => (
+                    <div 
+                      key={i}
+                      className="flex items-center gap-2 px-3 py-2 bg-[#22c55e]/10 rounded-lg border border-[#22c55e]/30 hover:bg-[#22c55e]/20 transition-colors"
+                    >
+                      {committer.avatar ? (
+                        <img 
+                          src={committer.avatar} 
+                          alt={committer.login}
+                          className="w-6 h-6 rounded-full shrink-0"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-[#22c55e]/20 flex items-center justify-center text-[#22c55e] text-[9px] shrink-0">
+                          {committer.login.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-[10px] text-white font-medium">{committer.login}</div>
+                        <div className="text-[9px] text-[#22c55e]">{committer.commits} commits</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fallback to local contributors if API not loaded */}
+            {!contributionStats && dashboardStats.topContributors.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
@@ -2337,8 +2597,8 @@ const Visualizer: React.FC<VisualizerProps> = ({
         </div>
       )}
 
-      {/* Keyboard hint */}
-      <div className="absolute bottom-4 right-4 text-[10px] text-[#475569] font-mono hidden sm:block">
+      {/* Keyboard hint - shifts left when sidebar open */}
+      <div className={`absolute bottom-2 text-[10px] text-[#475569] font-mono hidden sm:block transition-all ${selectedNode ? 'right-80' : 'right-4'}`}>
         Press <kbd className="px-1 py-0.5 bg-[#1e3a5f] rounded text-[#64748b] font-mono">?</kbd> for shortcuts
       </div>
 
