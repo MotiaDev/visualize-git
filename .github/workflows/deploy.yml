@@ -16,6 +16,8 @@ on:
 env:
   # API Key stored as GitHub Secret (NEVER commit API keys to code)
   MOTIA_API_KEY: ${{ secrets.MOTIA_API_KEY }}
+  # Project name in Motia Cloud
+  MOTIA_PROJECT_NAME: git-history
   # Environment ID from Motia Cloud dashboard (Settings tab)
   MOTIA_ENV_ID: ${{ secrets.MOTIA_ENV_ID }}
 
@@ -72,10 +74,11 @@ jobs:
         run: |
           npx motia cloud deploy \
             --api-key ${{ env.MOTIA_API_KEY }} \
+            --project-name ${{ env.MOTIA_PROJECT_NAME }} \
             --environment-id ${{ env.MOTIA_ENV_ID }} \
             --version-name "${{ env.VERSION_NAME }}" \
             --version-description "${{ env.VERSION_DESCRIPTION }}" \
-            --env-file .env
+            --env-file .env.local
 
       - name: Deployment Summary
         run: |

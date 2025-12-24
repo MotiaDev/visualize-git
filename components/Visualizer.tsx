@@ -1430,14 +1430,25 @@ const Visualizer: React.FC<VisualizerProps> = ({
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setShowLayoutToggle(true)}
-            className="p-2.5 bg-[#0d1424] border border-[#1e3a5f] rounded-lg text-[#64748b] hover:text-[#00d4ff] hover:bg-[#1e3a5f] hover:border-[#00d4ff] transition-colors shadow-lg cursor-pointer"
-            title="View options (layouts, timeline)"
-            style={{ pointerEvents: 'auto' }}
-          >
-            <Layers size={16} />
-          </button>
+          <>
+            <button
+              onClick={() => setShowLayoutToggle(true)}
+              className="p-2.5 bg-[#0d1424] border border-[#1e3a5f] rounded-lg text-[#64748b] hover:text-[#00d4ff] hover:bg-[#1e3a5f] hover:border-[#00d4ff] transition-colors shadow-lg cursor-pointer"
+              title="View options (layouts, timeline)"
+              style={{ pointerEvents: 'auto' }}
+            >
+              <Layers size={16} />
+            </button>
+            <button
+              onClick={() => setShowDashboard(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-[#0d1424] border border-[#1e3a5f] rounded-lg text-[11px] text-[#94a3b8] hover:border-[#00d4ff] hover:text-[#00d4ff] transition-all shadow-lg"
+              title="Repository Dashboard"
+            >
+              <span>📊</span>
+              <span>Dashboard</span>
+              <kbd className="px-1 py-0.5 bg-[#1e3a5f] rounded text-[#64748b] font-mono text-[9px]">d</kbd>
+            </button>
+          </>
         )}
       </div>
 
@@ -2602,15 +2613,6 @@ const Visualizer: React.FC<VisualizerProps> = ({
         Press <kbd className="px-1 py-0.5 bg-[#1e3a5f] rounded text-[#64748b] font-mono">?</kbd> for shortcuts
       </div>
 
-      {/* Dashboard button */}
-      <button
-        onClick={() => setShowDashboard(true)}
-        className="absolute bottom-4 left-4 px-3 py-1.5 bg-[#0d1424]/90 border border-[#1e3a5f] rounded-lg text-[11px] text-[#94a3b8] hover:border-[#00d4ff] hover:text-[#00d4ff] transition-all hidden sm:flex items-center gap-1.5"
-      >
-        <span>📊</span>
-        <span>Dashboard</span>
-        <kbd className="px-1 py-0.5 bg-[#1e3a5f] rounded text-[#64748b] font-mono text-[9px] ml-1">d</kbd>
-      </button>
     </div>
   );
 };
